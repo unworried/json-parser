@@ -64,6 +64,11 @@ string = foldr (\x -> (<*>) ((:) <$> char x)) (return [])
 nat :: Parser Integer
 nat = read <$> some digit
 
+int :: Parser Integer
+int = do
+  sign <- (pure negate <* char '-') <|> pure id
+  sign <$> nat
+
 space :: Parser ()
 space = () <$ many (char ' ')
 
@@ -95,7 +100,13 @@ jBool =
     <|> JBool False <$ string "false"
 
 jNumber :: Parser Json
-jNumber = undefined
+jNumber =
+  do
+    int <- token int
+    optional (char '.')
+    frac <- nat <|> return 0 -- Should not be 0 in case "1." where . present but no int after
+    let num = read $ show int ++ "." ++ show frac
+    return $ JNumber num
 
 jString :: Parser Json
 jString = undefined

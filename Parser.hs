@@ -48,32 +48,40 @@ item = P foo
     foo (c : cs) = Just (c, cs)
     foo _ = Nothing
 
+-- parse a character that satisfies a predicate
 sat :: (Char -> Bool) -> Parser Char
 sat p = do
   x <- item
   if p x then return x else empty
 
+-- parse a digit
 digit :: Parser Char
 digit = sat (\x -> x `elem` ['0' .. '9'])
 
+-- parse a specific character
 char :: Char -> Parser Char
 char x = sat (== x)
 
+-- parse a specific string
 string :: String -> Parser String
 string = foldr (\x -> (<*>) ((:) <$> char x)) (return [])
 
+-- parse a natural number (including 0)
 nat :: Parser Integer
 nat = read <$> some digit
 
+-- parse a signed integer
 int :: Parser Integer
 int = do
   sign <- (negate <$ char '-') <|> pure id
   sign <$> nat
 
+-- parse whitespace
 space :: Parser ()
 -- space = () <$ many (char ' ')
 space = () <$ many (sat (`elem` [' ', '\n', '\r', '\t']))
 
+-- tokenise a given parser (ignoring leading and trailing whitespace)
 token :: Parser a -> Parser a
 token pa = do
   space
@@ -81,6 +89,7 @@ token pa = do
   space
   return a
 
+-- parse a symbol, ignoring whitespace
 symbol :: String -> Parser String
 symbol xs = token $ string xs
 

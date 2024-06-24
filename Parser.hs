@@ -121,10 +121,25 @@ jNumber =
         <|> return 0
 
 jString :: Parser Json
-jString = undefined
+jString = do
+  char '"'
+  -- May not work with certain werid characters/patterns e.g. escape chars
+  str <- many $ sat (/= '"')
+  char '"'
+  return $ JString str
+
+sepBy :: Parser a -> Parser b -> Parser [b]
+sepBy sep element = (:) <$> element <*> many (sep *> element) <|> pure []
 
 jArray :: Parser Json
-jArray = undefined
+jArray = do
+  token $ char '['
+  elems <- sepBy (space *> char ',' <* space) json
+  token $ char ']'
+  return $ JArray elems
 
 jObject :: Parser Json
 jObject = undefined
+
+json :: Parser Json
+json = jNull <|> jBool <|> jNumber <|> jString <|> jArray <|> jObject

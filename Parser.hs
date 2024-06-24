@@ -1,6 +1,7 @@
 module Parser (Json (..), Parser (..), json, parse) where
 
 import Control.Applicative
+import Data.List (intercalate)
 
 -- Either Err or Success
 newtype Parser a = P (String -> Maybe (a, String))
@@ -90,7 +91,7 @@ data Json
   | JString String
   | JArray [Json]
   | JObject [(String, Json)]
-  deriving (Show)
+  deriving (Eq)
 
 jNull :: Parser Json
 jNull = JNull <$ string "null"
@@ -165,3 +166,11 @@ jObject =
 
 json :: Parser Json
 json = token $ jNull <|> jBool <|> jNumber <|> jString <|> jArray <|> jObject
+
+instance Show Json where
+  show JNull = "Null"
+  show (JBool bool) = show bool
+  show (JNumber num) = show num
+  show (JString str) = show str
+  show (JArray arr) = "[ " ++ intercalate ", " (fmap show arr) ++ " ]"
+  show (JObject obj) = "{ " ++ intercalate ", " (fmap (\(k, v) -> k ++ ": " ++ show v) obj) ++ " }"

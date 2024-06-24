@@ -8,4 +8,10 @@ parseFile path parser = do
   return $ fst <$> parse parser input
 
 main :: IO ()
-main = putStrLn "Hello, Haskell!"
+main = do
+  putStr "Enter filepath to parse: "
+  path <- getLine
+  result <- parseFile path json
+  case result of
+    Nothing -> putStrLn $ "error: Failed to parse: " ++ path
+    Just json -> print json

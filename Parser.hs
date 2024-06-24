@@ -70,7 +70,8 @@ int = do
   sign <$> nat
 
 space :: Parser ()
-space = () <$ many (char ' ')
+-- space = () <$ many (char ' ')
+space = () <$ many (sat (`elem` [' ', '\n', '\r', '\t']))
 
 token :: Parser a -> Parser a
 token pa = do
@@ -134,7 +135,7 @@ sepBy sep element = (:) <$> element <*> many (sep *> element) <|> pure []
 jArray :: Parser Json
 jArray = do
   token $ char '['
-  elems <- sepBy (space *> char ',' <* space) json
+  elems <- sepBy (token $ char ',') json
   token $ char ']'
   return $ JArray elems
 
@@ -142,7 +143,7 @@ jObject :: Parser Json
 jObject =
   do
     token $ char '{'
-    pairs <- sepBy (space *> char ',' <* space) pair
+    pairs <- sepBy (token $ char ',') pair
     token $ char '}'
     return $ JObject pairs
   where
@@ -155,4 +156,4 @@ jObject =
       return (key, val)
 
 json :: Parser Json
-json = jNull <|> jBool <|> jNumber <|> jString <|> jArray <|> jObject
+json = token $ jNull <|> jBool <|> jNumber <|> jString <|> jArray <|> jObject

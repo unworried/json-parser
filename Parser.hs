@@ -66,7 +66,7 @@ nat = read <$> some digit
 
 int :: Parser Integer
 int = do
-  sign <- (pure negate <* char '-') <|> pure id
+  sign <- (negate <$ char '-') <|> pure id
   sign <$> nat
 
 space :: Parser ()
@@ -121,37 +121,45 @@ jNumber =
         int
         <|> return 0
 
+-- May not work with certain werid characters/patterns e.g. escape chars
+stringLiteral :: Parser String
+stringLiteral = char '"' *> many (standard <|> escaped) <* char '"'
+  where
+    standard = sat ((&&) <$> (/= '"') <*> (/= '\\'))
+    escaped =
+      ('"' <$ string "\\\"")
+        <|> ('\\' <$ string "\\\\")
+        <|> ('/' <$ string "\\/")
+        <|> ('\b' <$ string "\\b")
+        <|> ('\f' <$ string "\\f")
+        <|> ('\n' <$ string "\\n")
+        <|> ('\r' <$ string "\\r")
+        <|> ('\t' <$ string "\\t")
+
 jString :: Parser Json
-jString = do
-  char '"'
-  -- May not work with certain werid characters/patterns e.g. escape chars
-  str <- many $ sat (/= '"')
-  char '"'
-  return $ JString str
+jString = JString <$> stringLiteral
 
 sepBy :: Parser a -> Parser b -> Parser [b]
 sepBy sep element = (:) <$> element <*> many (sep *> element) <|> pure []
 
 jArray :: Parser Json
 jArray = do
-  token $ char '['
-  elems <- sepBy (token $ char ',') json
-  token $ char ']'
+  symbol "["
+  elems <- sepBy (symbol ",") json
+  symbol "]"
   return $ JArray elems
 
 jObject :: Parser Json
 jObject =
   do
-    token $ char '{'
-    pairs <- sepBy (token $ char ',') pair
-    token $ char '}'
+    symbol "{"
+    pairs <- sepBy (symbol ",") pair
+    symbol "}"
     return $ JObject pairs
   where
     pair = do
-      char '"'
-      key <- many $ sat (/= '"')
-      char '"'
-      token $ char ':'
+      key <- stringLiteral
+      symbol ":"
       val <- token json
       return (key, val)
 

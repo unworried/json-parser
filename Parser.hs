@@ -139,7 +139,20 @@ jArray = do
   return $ JArray elems
 
 jObject :: Parser Json
-jObject = undefined
+jObject =
+  do
+    token $ char '{'
+    pairs <- sepBy (space *> char ',' <* space) pair
+    token $ char '}'
+    return $ JObject pairs
+  where
+    pair = do
+      char '"'
+      key <- many $ sat (/= '"')
+      char '"'
+      token $ char ':'
+      val <- token json
+      return (key, val)
 
 json :: Parser Json
 json = jNull <|> jBool <|> jNumber <|> jString <|> jArray <|> jObject

@@ -1,6 +1,6 @@
 module Main where
 
-import Parser (Json (..), Parser (..), json, parse)
+import Parser (Parser (..), json, parse)
 
 parseFile :: FilePath -> Parser a -> IO (Maybe a)
 parseFile path parser = do

@@ -1,4 +1,4 @@
-module Parser where
+module Parser (Json (..), Parser (..), json, parse) where
 
 import Control.Applicative
 

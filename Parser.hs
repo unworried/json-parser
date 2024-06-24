@@ -102,11 +102,23 @@ jBool =
 jNumber :: Parser Json
 jNumber =
   do
-    int <- token int
-    optional (char '.')
-    frac <- nat <|> return 0 -- Should not be 0 in case "1." where . present but no int after
-    let num = read $ show int ++ "." ++ show frac
+    integer <- token int
+    frac <- fractional'
+    expo <- exponent'
+    let num = (*) (10 ^^ expo) $ read $ show integer ++ "." ++ show frac
     return $ JNumber num
+  where
+    fractional' =
+      do
+        char '.'
+        nat
+        <|> return 0
+
+    exponent' =
+      do
+        char 'e' <|> char 'E'
+        int
+        <|> return 0
 
 jString :: Parser Json
 jString = undefined

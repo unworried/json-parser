@@ -86,5 +86,22 @@ data Json
   | JObject [(String, Json)]
   deriving (Show)
 
-main :: IO ()
-main = undefined
+jNull :: Parser Json
+jNull = JNull <$ string "null"
+
+jBool :: Parser Json
+jBool =
+  JBool True <$ string "true"
+    <|> JBool False <$ string "false"
+
+jNumber :: Parser Json
+jNumber = undefined
+
+jString :: Parser Json
+jString = undefined
+
+jArray :: Parser Json
+jArray = undefined
+
+jObject :: Parser Json
+jObject = undefined

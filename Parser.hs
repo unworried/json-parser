@@ -90,8 +90,8 @@ token pa = do
   return a
 
 -- parse a symbol, ignoring whitespace
-symbol :: String -> Parser String
-symbol xs = token $ string xs
+symbol :: Char -> Parser Char
+symbol xs = token $ char xs
 
 data Json
   = JNull
@@ -154,22 +154,22 @@ sepBy sep element = (:) <$> element <*> many (sep *> element) <|> pure []
 
 jArray :: Parser Json
 jArray = do
-  symbol "["
-  elems <- sepBy (symbol ",") json
-  symbol "]"
+  symbol '['
+  elems <- sepBy (symbol ',') json
+  symbol ']'
   return $ JArray elems
 
 jObject :: Parser Json
 jObject =
   do
-    symbol "{"
-    pairs <- sepBy (symbol ",") pair
-    symbol "}"
+    symbol '{'
+    pairs <- sepBy (symbol ',') pair
+    symbol '}'
     return $ JObject pairs
   where
     pair = do
       key <- stringLiteral
-      symbol ":"
+      symbol ':'
       val <- token json
       return (key, val)
 

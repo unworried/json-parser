@@ -96,21 +96,20 @@ symbol :: Char -> Parser Char
 symbol xs = token $ char xs
 
 data Json
-  = JNull
-  | JBool !Bool
-  | JNumber !Double
-  | JString !String
-  | JArray ![Json]
-  | JObject ![(String, Json)]
-  deriving (Eq)
+  = Null
+  | Bool !Bool
+  | Number !Double
+  | String !String
+  | Array ![Json]
+  | Object ![(String, Json)]
 
 jNull :: Parser Json
-jNull = JNull <$ string "null"
+jNull = Null <$ string "null"
 
 jBool :: Parser Json
 jBool =
-  JBool True <$ string "true"
-    <|> JBool False <$ string "false"
+  Bool True <$ string "true"
+    <|> Bool False <$ string "false"
 
 jNumber :: Parser Json
 jNumber =
@@ -118,9 +117,8 @@ jNumber =
     integer <- token int
     frac <- fractional'
     expo <- exponent'
-    return $ JNumber $ fromIntegral integer * (10 ^^ expo) + frac * (10 ^^ expo)
+    return $ Number $ fromIntegral integer * (10 ^^ expo) + frac * (10 ^^ expo)
   where
-    fractional' :: Parser Double
     fractional' =
       (read . ('0' :) <$> ((:) <$> char '.' <*> some digit))
         <|> return 0
@@ -152,7 +150,7 @@ stringLiteral = char '"' *> many (standard <|> escaped) <* char '"'
         <|> (string "\\u" *> escapeHex)
 
 jString :: Parser Json
-jString = JString <$> stringLiteral
+jString = String <$> stringLiteral
 
 sepBy :: Parser a -> Parser b -> Parser [b]
 sepBy sep element = (:) <$> element <*> many (sep *> element) <|> pure []
@@ -162,7 +160,7 @@ jArray = do
   symbol '['
   elems <- sepBy (symbol ',') json
   symbol ']'
-  return $ JArray elems
+  return $ Array elems
 
 jObject :: Parser Json
 jObject =
@@ -170,7 +168,7 @@ jObject =
     symbol '{'
     pairs <- sepBy (symbol ',') pair
     symbol '}'
-    return $ JObject pairs
+    return $ Object pairs
   where
     pair = do
       key <- stringLiteral
@@ -182,9 +180,9 @@ json :: Parser Json
 json = token $ jNull <|> jBool <|> jNumber <|> jString <|> jArray <|> jObject
 
 instance Show Json where
-  show JNull = "Null"
-  show (JBool bool) = show bool
-  show (JNumber num) = show num
-  show (JString str) = show str
-  show (JArray arr) = "[ " ++ intercalate ", " (fmap show arr) ++ " ]"
-  show (JObject obj) = "{ " ++ intercalate ", " (fmap (\(k, v) -> k ++ ": " ++ show v) obj) ++ " }"
+  show Null = "Null"
+  show (Bool bool) = show bool
+  show (Number num) = show num
+  show (String str) = show str
+  show (Array arr) = "[ " ++ intercalate ", " (fmap show arr) ++ " ]"
+  show (Object obj) = "{ " ++ intercalate ", " (fmap (\(k, v) -> k ++ ": " ++ show v) obj) ++ " }"

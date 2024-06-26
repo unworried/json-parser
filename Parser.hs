@@ -6,36 +6,29 @@ import Data.Char (chr, isHexDigit)
 import Data.List (intercalate)
 import Numeric (readHex)
 
--- Either Err or Success
 newtype Parser a = P {parse :: String -> Maybe (a, String)}
 
 instance Functor Parser where
-  fmap :: (a -> b) -> Parser a -> Parser b
   fmap g pa = do
     a <- pa
     return $ g a
 
 instance Applicative Parser where
-  pure :: a -> Parser a
   pure a = P $ \cs -> Just (a, cs)
 
-  (<*>) :: Parser (a -> b) -> Parser a -> Parser b
   pg <*> pa = do
     g <- pg
     g <$> pa
 
 instance Monad Parser where
-  (>>=) :: Parser a -> (a -> Parser b) -> Parser b
   p >>= f = P $ \cs ->
     case parse p cs of
       Nothing -> Nothing
       Just (a, str') -> parse (f a) str'
 
 instance Alternative Parser where
-  empty :: Parser a
   empty = P $ const Nothing
 
-  (<|>) :: Parser a -> Parser a -> Parser a
   p <|> q = P $ \cs ->
     case parse p cs of
       Nothing -> parse q cs
@@ -170,11 +163,7 @@ jObject =
     symbol '}'
     return $ Object pairs
   where
-    pair = do
-      key <- stringLiteral
-      symbol ':'
-      val <- token json
-      return (key, val)
+    pair = (,) <$> (stringLiteral <* symbol ':') <*> json
 
 json :: Parser Json
 json = token $ jNull <|> jBool <|> jNumber <|> jString <|> jArray <|> jObject

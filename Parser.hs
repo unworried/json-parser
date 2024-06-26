@@ -100,9 +100,10 @@ jNull :: Parser Json
 jNull = Null <$ string "null"
 
 jBool :: Parser Json
-jBool =
-  Bool True <$ string "true"
-    <|> Bool False <$ string "false"
+-- jBool =
+--  Bool True <$ string "true"
+--    <|> Bool False <$ string "false"
+jBool = Bool <$> ((True <$ string "true") <|> (False <$ string "false"))
 
 jNumber :: Parser Json
 jNumber =
@@ -120,7 +121,6 @@ jNumber =
       do
         char 'e' <|> char 'E'
         int <|> char '+' *> nat
-        -- (*) <$> ((1 <$ char '+') <|> (-1 <$ char '-') <|> return 1) <*> nat
         <|> return 0
 
 escapeHex :: Parser Char

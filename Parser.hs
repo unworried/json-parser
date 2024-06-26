@@ -72,10 +72,12 @@ nat = read <$> some digit
 
 -- parse a signed integer
 int :: Parser Integer
+int = (negate <$ char '-') <*> nat <|> nat -- TODO: Test this!
+{--
 int = do
-  -- sign <- (negate <$ char '-') <|> pure id
-  -- sign <$> nat
-  (negate <$ char '-') <*> nat <|> nat -- TODO: Test this!
+  sign <- (negate <$ char '-') <|> pure id
+  sign <$> nat
+--}
 
 -- parse whitespace
 space :: Parser ()
@@ -95,11 +97,11 @@ symbol xs = token $ char xs
 
 data Json
   = JNull
-  | JBool Bool
-  | JNumber Double
-  | JString String
-  | JArray [Json]
-  | JObject [(String, Json)]
+  | JBool !Bool
+  | JNumber !Double
+  | JString !String
+  | JArray ![Json]
+  | JObject ![(String, Json)]
   deriving (Eq)
 
 jNull :: Parser Json
@@ -116,7 +118,7 @@ jNumber =
     integer <- token int
     frac <- fractional'
     expo <- exponent'
-    return $ JNumber $ (*) (10 ^^ expo) $ fromIntegral integer + frac
+    return $ JNumber $ fromIntegral integer * (10 ^^ expo) + frac * (10 ^^ expo)
   where
     fractional' :: Parser Double
     fractional' =

@@ -1,10 +1,13 @@
-module Parser (Json (..), Parser (..), json, parse) where
+module Parser (Json (..), Parser (..), json) where
 
 import Control.Applicative
+import Control.Monad (replicateM)
+import Data.Char (chr, isHexDigit)
 import Data.List (intercalate)
+import Numeric (readHex)
 
 -- Either Err or Success
-newtype Parser a = P (String -> Maybe (a, String))
+newtype Parser a = P {parse :: String -> Maybe (a, String)}
 
 instance Functor Parser where
   fmap :: (a -> b) -> Parser a -> Parser b
@@ -38,9 +41,6 @@ instance Alternative Parser where
       Nothing -> parse q cs
       mx -> mx
 
-parse :: Parser a -> String -> Maybe (a, String)
-parse (P p) = p
-
 -- parse one character
 item :: Parser Char
 item = P foo
@@ -73,12 +73,12 @@ nat = read <$> some digit
 -- parse a signed integer
 int :: Parser Integer
 int = do
-  sign <- (negate <$ char '-') <|> pure id
-  sign <$> nat
+  -- sign <- (negate <$ char '-') <|> pure id
+  -- sign <$> nat
+  (negate <$ char '-') <*> nat <|> nat -- TODO: Test this!
 
 -- parse whitespace
 space :: Parser ()
--- space = () <$ many (char ' ')
 space = () <$ many (sat (`elem` [' ', '\n', '\r', '\t']))
 
 -- tokenise a given parser (ignoring leading and trailing whitespace)
@@ -116,20 +116,22 @@ jNumber =
     integer <- token int
     frac <- fractional'
     expo <- exponent'
-    let num = (*) (10 ^^ expo) $ read $ show integer ++ "." ++ show frac
-    return $ JNumber num
+    return $ JNumber $ (*) (10 ^^ expo) $ fromIntegral integer + frac
   where
+    fractional' :: Parser Double
     fractional' =
-      do
-        char '.'
-        nat
+      (read . ('0' :) <$> ((:) <$> char '.' <*> some digit))
         <|> return 0
 
     exponent' =
       do
         char 'e' <|> char 'E'
-        int
+        int <|> char '+' *> nat
+        -- (*) <$> ((1 <$ char '+') <|> (-1 <$ char '-') <|> return 1) <*> nat
         <|> return 0
+
+escapeHex :: Parser Char
+escapeHex = chr . fst . head . readHex <$> replicateM 4 (sat isHexDigit)
 
 -- May not work with certain werid characters/patterns e.g. escape chars
 stringLiteral :: Parser String
@@ -145,6 +147,7 @@ stringLiteral = char '"' *> many (standard <|> escaped) <* char '"'
         <|> ('\n' <$ string "\\n")
         <|> ('\r' <$ string "\\r")
         <|> ('\t' <$ string "\\t")
+        <|> (string "\\u" *> escapeHex)
 
 jString :: Parser Json
 jString = JString <$> stringLiteral
